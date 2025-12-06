@@ -1,0 +1,223 @@
+# LiteLLM Proxy Configuration
+# See https://docs.litellm.ai/docs/proxy/configs
+
+model_list:
+  # =============================================================================
+  # ROUTING ALIASES - Map rule labels to actual model deployments
+  # =============================================================================
+  # When a request matches a rule in ccproxy.yaml, the model_router hook rewrites
+  # the model field to the corresponding alias, which then maps to a deployment below.
+
+  # Default alias - used when no routing rule matches
+  - model_name: default
+    litellm_params:
+      model: claude-sonnet-4-5-20250929
+
+  # Routing aliases for advanced rules (matches rule names in ccproxy.yaml)
+  - model_name: high_token_count
+    litellm_params:
+      model: anthropic/glm-4.6  # Route high-token requests to unlimited GLM
+      api_key: os.environ/GLM_API_KEY
+      api_base: https://open.bigmodel.cn/api/anthropic
+
+  - model_name: web_search
+    litellm_params:
+      model: anthropic/glm-4.6  # Route web search tasks to unlimited GLM
+      api_key: os.environ/GLM_API_KEY
+      api_base: https://open.bigmodel.cn/api/anthropic
+
+  - model_name: extended_thinking
+    litellm_params:
+      model: anthropic/glm-4.6  # Route thinking requests to unlimited GLM
+      api_key: os.environ/GLM_API_KEY
+      api_base: https://open.bigmodel.cn/api/anthropic
+
+  # =============================================================================
+  # ANTHROPIC MODELS - Via OAuth (Claude Max Subscription)
+  # =============================================================================
+  # These models use OAuth authentication from .credentials.json
+  # No api_key needed - handled by forward_oauth hook
+
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_base: https://api.anthropic.com
+
+  - model_name: claude-opus-4-5-20251101
+    litellm_params:
+      model: anthropic/claude-opus-4-5-20251101
+      api_base: https://api.anthropic.com
+
+  - model_name: claude-haiku-4-5-20251001
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_base: https://api.anthropic.com
+
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://api.anthropic.com
+
+  # =============================================================================
+  # Z.AI MODELS - GLM (Unlimited $6/month Coding Plan)
+  # =============================================================================
+  # Using Anthropic-compatible API format
+
+  - model_name: glm-4.6
+    litellm_params:
+      model: anthropic/glm-4.6
+      api_key: os.environ/GLM_API_KEY
+      api_base: https://open.bigmodel.cn/api/anthropic
+
+  - model_name: glm-4.5-air
+    litellm_params:
+      model: anthropic/glm-4.5-air
+      api_key: os.environ/GLM_API_KEY
+      api_base: https://open.bigmodel.cn/api/anthropic
+
+  # =============================================================================
+  # OPENROUTER - DeepSeek (Backup for background tasks)
+  # =============================================================================
+
+  - model_name: deepseek-chat
+    litellm_params:
+      model: openrouter/deepseek/deepseek-chat-v3.1
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  # =============================================================================
+  # OLLAMA - Local Models (Free, fast, private)
+  # =============================================================================
+
+  - model_name: llama3.1
+    litellm_params:
+      model: ollama/llama3.1:8b-instruct-q4_k_m
+      api_base: http://localhost:11434
+
+  # =============================================================================
+  # ADDITIONAL PROVIDER EXAMPLES (Commented - uncomment and configure as needed)
+  # =============================================================================
+
+  # ---------------------------------------------------------------------------
+  # OPENAI - GPT Models
+  # ---------------------------------------------------------------------------
+  # Requires: Set OPENAI_API_KEY environment variable or replace with actual key
+
+  # - model_name: gpt-4o
+  #   litellm_params:
+  #     model: openai/gpt-4o
+  #     api_key: os.environ/OPENAI_API_KEY
+
+  # - model_name: gpt-4o-mini
+  #   litellm_params:
+  #     model: openai/gpt-4o-mini
+  #     api_key: os.environ/OPENAI_API_KEY
+
+  # - model_name: o1-preview
+  #   litellm_params:
+  #     model: openai/o1-preview
+  #     api_key: os.environ/OPENAI_API_KEY
+
+  # ---------------------------------------------------------------------------
+  # GOOGLE GEMINI - AI Studio (Simple API key authentication)
+  # ---------------------------------------------------------------------------
+  # Requires: Set GEMINI_API_KEY environment variable
+  # Get API key from: https://aistudio.google.com/app/apikey
+
+  # - model_name: gemini-2.0-flash
+  #   litellm_params:
+  #     model: gemini/gemini-2.0-flash
+  #     api_key: os.environ/GEMINI_API_KEY
+
+  # - model_name: gemini-1.5-pro
+  #   litellm_params:
+  #     model: gemini/gemini-1.5-pro
+  #     api_key: os.environ/GEMINI_API_KEY
+
+  # # Gemini 2M token window - excellent for large context
+  # - model_name: gemini-1.5-pro-002
+  #   litellm_params:
+  #     model: gemini/gemini-1.5-pro-002
+  #     api_key: os.environ/GEMINI_API_KEY
+
+  # ---------------------------------------------------------------------------
+  # GOOGLE VERTEX AI - Enterprise Gemini (GCP service account)
+  # ---------------------------------------------------------------------------
+  # Requires: Set up GCP service account and authenticate
+  # See: https://docs.litellm.ai/docs/providers/vertex
+
+  # Global Vertex AI settings (applies to all Vertex models):
+  # litellm_settings:
+  #   vertex_project: "your-gcp-project-id"
+  #   vertex_location: "us-central1"
+
+  # - model_name: vertex-gemini-2.5-pro
+  #   litellm_params:
+  #     model: vertex_ai/gemini-2.5-pro
+  #     # vertex_project and vertex_location inherited from litellm_settings
+
+  # - model_name: vertex-gemini-flash
+  #   litellm_params:
+  #     model: vertex_ai/gemini-2.0-flash
+  #     vertex_project: "your-gcp-project-id"  # Or specify per-model
+  #     vertex_location: "us-central1"
+
+  # ---------------------------------------------------------------------------
+  # AZURE OPENAI - Enterprise OpenAI (Azure subscription)
+  # ---------------------------------------------------------------------------
+  # Requires: Azure OpenAI resource and deployment
+  # See: https://docs.litellm.ai/docs/providers/azure
+
+  # - model_name: azure-gpt-4o
+  #   litellm_params:
+  #     model: azure/your-deployment-name
+  #     api_base: https://your-resource.openai.azure.com/
+  #     api_version: "2023-05-15"
+  #     api_key: os.environ/AZURE_OPENAI_API_KEY
+
+  # - model_name: azure-gpt-4-turbo
+  #   litellm_params:
+  #     model: azure/gpt-4-turbo-deployment
+  #     api_base: https://your-resource.openai.azure.com/
+  #     api_version: "2023-05-15"
+  #     api_key: os.environ/AZURE_OPENAI_API_KEY
+
+  # ---------------------------------------------------------------------------
+  # PERPLEXITY - Web search models
+  # ---------------------------------------------------------------------------
+  # Excellent for tasks requiring current web information
+
+  # - model_name: perplexity-sonar
+  #   litellm_params:
+  #     model: perplexity/llama-3.1-sonar-huge-128k-online
+  #     api_key: os.environ/PERPLEXITY_API_KEY
+
+  # ---------------------------------------------------------------------------
+  # MISTRAL AI - European alternative
+  # ---------------------------------------------------------------------------
+
+  # - model_name: mistral-large
+  #   litellm_params:
+  #     model: mistral/mistral-large-latest
+  #     api_key: os.environ/MISTRAL_API_KEY
+
+# =============================================================================
+# LITELLM SETTINGS
+# =============================================================================
+
+litellm_settings:
+  callbacks:
+    - ccproxy.handler  # Required for ccproxy routing
+    - langfuse  # Optional: Enable for observability
+  success_callback:
+    - langfuse  # Optional: Track successful requests
+
+  # Drop extra parameters that some providers don't support
+  drop_params: true
+
+# =============================================================================
+# GENERAL SETTINGS
+# =============================================================================
+
+general_settings:
+  # Forward client headers to LLM API (required for OAuth)
+  forward_client_headers_to_llm_api: true

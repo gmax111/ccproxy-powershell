@@ -1,0 +1,89 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+litellm.log
+ccproxy.log
+
+# Lock files
+*.pid
+litellm.pid
+litellm.lock
+
+# Environment variables (keep .env.example, ignore .env)
+.env
+.env.local
+.env.*.local
+
+# Config files with secrets (keep .example versions)
+ccproxy.yaml.bak
+config.yaml.bak
+*credentials*.json
+.credentials.json
+
+# Backups
+backup/
+*.backup
+*.bak
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.Zone.Identifier
+
+# Test files
+test/
+tests/
+*.test.py
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+tmp/
+temp/

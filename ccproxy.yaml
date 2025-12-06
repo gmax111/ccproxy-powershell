@@ -1,0 +1,84 @@
+ccproxy:
+  debug: true
+  handler: "ccproxy.handler:CCProxyHandler"
+
+  # OAuth token sources - PowerShell commands to retrieve tokens for each provider
+  # NOTE: These commands run on ccproxy startup to load OAuth tokens
+  oat_sources:
+    # Simple string form - PowerShell command that outputs the token
+    anthropic: "powershell.exe -Command \"(Get-Content '$env:USERPROFILE\\.claude\\.credentials.json' | ConvertFrom-Json).claudeAiOauth.accessToken\""
+
+    # Extended form with custom User-Agent (if needed for other providers)
+    # gemini:
+    #   command: "powershell.exe -Command \"(Get-Content '$env:USERPROFILE\\.gemini\\oauth_creds.json' | ConvertFrom-Json).access_token\""
+    #   user_agent: "MyApp/1.0.0"
+
+  hooks:
+    - ccproxy.hooks.rule_evaluator # evaluates rules against request (required for routing)
+    - ccproxy.hooks.model_router # routes to appropriate model based on rules
+    - ccproxy.hooks.capture_headers # captures HTTP headers with sensitive value redaction
+    # Hook with params example - capture only specific headers:
+    # - hook: ccproxy.hooks.capture_headers
+    #   params:
+    #     headers: [user-agent, x-request-id, content-type]
+    - ccproxy.hooks.forward_oauth # forwards OAuth token to provider (must be after routing)
+    # - ccproxy.hooks.forward_apikey # forwards x-api-key header from request (enable if needed)
+
+  # Uses the original model that Claude Code requested when no routing rule matches
+  # NOTE: Model deployments in config.yaml are still required for all models
+  default_model_passthrough: true
+
+  rules: []
+    # ADVANCED ROUTING RULES - TEMPORARILY DISABLED
+    # Uncomment the rules below when you want to enable intelligent routing
+
+    # # 1. HIGH TOKEN COUNT RULE
+    # # Routes requests with >60k tokens to GLM-4.6 (unlimited $6/month)
+    # # Use case: Large context tasks that would consume Claude Max session limits
+    # - name: high_token_count
+    #   rule: ccproxy.rules.TokenCountRule
+    #   params:
+    #     threshold: 60000  # Trigger when request exceeds 60,000 tokens
+
+    # # 2. WEB SEARCH TOOL RULE
+    # # Routes requests using WebSearch tool to GLM-4.6
+    # # Use case: Web search tasks can use cheaper/unlimited model
+    # - name: web_search
+    #   rule: ccproxy.rules.MatchToolRule
+    #   params:
+    #     tool_name: WebSearch
+
+    # # 3. EXTENDED THINKING RULE
+    # # Routes requests with thinking field (extended thinking mode) to GLM-4.6
+    # # Use case: Thinking requests generate lots of tokens - route to unlimited model
+    # # ⚠️ WARNING: Matches ALL requests - see docs/ROUTING-RULES.md
+    # - name: extended_thinking
+    #   rule: ccproxy.rules.ThinkingRule
+
+    # 4. MODEL MATCHING RULES (Basic regex matching)
+    # These were your original rules - kept for compatibility
+
+    # Match requests with "think" in model name (from your original config)
+    # - name: think-mode
+    #   rule: ccproxy.rules.MatchModelRule
+    #   params:
+    #     model_name: ".*think.*"
+
+    # Match requests with "longContext" in model name (from your original config)
+    # - name: long-context
+    #   rule: ccproxy.rules.MatchModelRule
+    #   params:
+    #     model_name: ".*longContext.*"
+
+    # NOTE: The MatchModelRule rules above are commented out because:
+    # 1. Claude Code doesn't expose models with "think" or "longContext" in the name
+    # 2. The advanced rules above (TokenCountRule, ThinkingRule) are more effective
+    # 3. You can still manually select models like "glm-4.6" using /model command
+
+litellm:
+  host: 127.0.0.1
+  port: 4000
+  num_workers: 4
+  debug: true
+  detailed_debug: true
+  log_file: $env:USERPROFILE\.ccproxy\litellm.log
