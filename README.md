@@ -16,7 +16,7 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 ## Features
 
 ### All Original CCProxy Features ✅
-- OAuth token forwarding (Claude Max subscription)
+- OAuth token forwarding (Claude Pro & Max subscription)
 - Model routing rules (ThinkingRule, TokenCountRule, MatchToolRule, MatchModelRule)
 - Multi-provider support via LiteLLM
 - Request/response logging with header capture
