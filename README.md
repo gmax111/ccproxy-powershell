@@ -7,7 +7,7 @@
 
 CCProxy intercepts Claude Code API requests and routes them to different LLM providers based on configurable rules. This lets you:
 
-- **Use Claude Max subscription** (OAuth) for high-quality tasks
+- **Use Claude Pro/Max subscription** (OAuth) for high-quality tasks
 - **Route heavy workloads** to unlimited providers (GLM-4.6: $6/month)
 - **Switch between providers** based on token count, tools used, or model requested
 - **Configure different models per agent** (programming → GLM, design → Gemini, etc.)
@@ -38,7 +38,7 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 - Windows 10/11 with PowerShell 7+
 - [Claude Code CLI](https://claude.ai/download) installed
 - [uv](https://docs.astral.sh/uv/) package manager
-- Claude Max subscription (for OAuth) or API keys for other providers
+- Claude Pro or Max subscription (for OAuth) or API keys for other providers
 
 ### Option A: Automated Setup (Recommended)
 
@@ -81,7 +81,7 @@ Copy-Item config.yaml "$env:USERPROFILE\.ccproxy\config.yaml"
 Copy-Item watchdog.ps1 "$env:USERPROFILE\.ccproxy\watchdog.ps1"
 ```
 
-### 3. Configure OAuth (Claude Max Users)
+### 3. Configure OAuth (Claude Pro/Max Users)
 
 Edit `~/.ccproxy/ccproxy.yaml` and update the OAuth path:
 
@@ -155,7 +155,7 @@ cclaude
 
 | Provider | Authentication | Notes |
 |----------|---------------|-------|
-| **Anthropic Claude** | OAuth (Claude Max) | via `.credentials.json` |
+| **Anthropic Claude** | OAuth (Claude Pro/Max) | via `.credentials.json` |
 | **Z.ai GLM** | API Key | $6/month unlimited coding plan |
 | **OpenRouter** | API Key | DeepSeek, Llama, etc. |
 | **OpenAI** | API Key | GPT-4o, o1-preview, etc. |

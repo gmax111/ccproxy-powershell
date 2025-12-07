@@ -33,7 +33,7 @@ model_list:
       api_base: https://open.bigmodel.cn/api/anthropic
 
   # =============================================================================
-  # ANTHROPIC MODELS - Via OAuth (Claude Max Subscription)
+  # ANTHROPIC MODELS - Via OAuth (Claude Pro/Max Subscription)
   # =============================================================================
   # These models use OAuth authentication from .credentials.json
   # No api_key needed - handled by forward_oauth hook

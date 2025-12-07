@@ -97,7 +97,7 @@ git push -u origin main
 
 ### 3. Repository Description
 
-> "Windows PowerShell-compatible CCProxy fork for Claude Code. Route requests to multiple AI providers with intelligent routing rules. Supports Claude Max (OAuth), GLM, OpenAI, Gemini, and more."
+> "Windows PowerShell-compatible CCProxy fork for Claude Code. Route requests to multiple AI providers with intelligent routing rules. Supports Claude Pro/Max (OAuth), GLM, OpenAI, Gemini, and more."
 
 ### 4. Repository Topics
 
