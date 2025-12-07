@@ -11,19 +11,36 @@
 # 4. Run: . $PROFILE
 # ============================================================================
 
-# Claude Code alias with auto-start CCProxy
+# Claude Code alias with auto-start CCProxy + Watchdog
 function cclaude {
     # Set UTF-8 encoding for CCProxy (Windows compatibility fix for Bug #2)
     $env:PYTHONIOENCODING = 'utf-8'
 
+    $configDir = "$env:USERPROFILE\.ccproxy"
+    $watchdogScript = "$configDir\watchdog.ps1"
+
     # Check if CCProxy is running
-    $ccproxyStatus = ccproxy --config-dir "$env:USERPROFILE\.ccproxy" status 2>&1
+    $ccproxyStatus = ccproxy --config-dir $configDir status 2>&1
 
     if ($ccproxyStatus -notlike '*running*') {
         Write-Host 'Starting CCProxy...' -ForegroundColor Yellow
-        ccproxy --config-dir "$env:USERPROFILE\.ccproxy" start --detach 2>&1 | Out-Null
+        ccproxy --config-dir $configDir start --detach 2>&1 | Out-Null
         Start-Sleep -Seconds 3
         Write-Host 'CCProxy started' -ForegroundColor Green
+    }
+
+    # Start watchdog if not already running
+    # Watchdog auto-restarts ccproxy if it crashes (handles CPython #93821 Windows asyncio bug)
+    $watchdogRunning = Get-Process -Name "pwsh" -ErrorAction SilentlyContinue | Where-Object {
+        try {
+            $_.CommandLine -like "*watchdog.ps1*"
+        } catch { $false }
+    }
+
+    if (-not $watchdogRunning -and (Test-Path $watchdogScript)) {
+        Write-Host 'Starting CCProxy watchdog...' -ForegroundColor Yellow
+        Start-Process pwsh -ArgumentList "-NoProfile", "-WindowStyle", "Hidden", "-File", $watchdogScript -WindowStyle Hidden
+        Write-Host 'Watchdog started (auto-restarts ccproxy on crash)' -ForegroundColor Green
     }
 
     # Redirect Claude Code requests through CCProxy

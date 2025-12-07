@@ -4,18 +4,23 @@ This directory contains a complete, sanitized CCProxy PowerShell repository read
 
 ## ✅ What's Included
 
+### Scripts
+- `setup.ps1` - Setup/update script with safe config preservation
+- `watchdog.ps1` - Auto-restart on crash (handles CPython #93821)
+
 ### Core Configuration Files (Sanitized)
-- `ccproxy.yaml` - Your working config with personal info removed
-- `config.yaml` - Your working config with API keys replaced by `os.environ/VAR_NAME`
+- `ccproxy.yaml` - Template config with personal info removed
+- `config.yaml` - Template config with API keys replaced by `os.environ/VAR_NAME`
 - `.env.example` - API key placeholders with setup instructions
-- `Microsoft.PowerShell_profile.example.ps1` - PowerShell profile template
+- `Microsoft.PowerShell_profile.example.ps1` - PowerShell profile template (with watchdog)
 
 ### Documentation (Complete)
 - `README.md` - Main documentation with quick start guide
-- `docs/AGENT-ROUTING.md` - Agent-specific model configuration (9.1 KB)
-- `docs/PROVIDERS.md` - Setup guide for 10+ providers (14.2 KB)
-- `docs/ROUTING-RULES.md` - All 4 routing rules explained (18.2 KB)
-- `docs/TROUBLESHOOTING.md` - Windows issues & solutions (15.3 KB)
+- `docs/AGENT-ROUTING.md` - Agent-specific model configuration
+- `docs/PROVIDERS.md` - Setup guide for 10+ providers
+- `docs/ROUTING-RULES.md` - All 4 routing rules explained
+- `docs/TROUBLESHOOTING.md` - Windows issues & solutions (5 bugs documented)
+- `docs/UPDATING.md` - Safe update guide
 
 ### Repository Files
 - `LICENSE` - MIT License
@@ -37,7 +42,9 @@ repo-ready/
 ├── README.md                                   # Main documentation
 ├── LICENSE                                     # MIT License
 ├── .gitignore                                  # Git ignore rules
-├── ccproxy.yaml                               # Sanitized config
+├── setup.ps1                                  # Setup/update script
+├── watchdog.ps1                               # Auto-restart on crash
+├── ccproxy.yaml                               # Sanitized config template
 ├── config.yaml                                # Sanitized config with env vars
 ├── .env.example                               # API key template
 ├── Microsoft.PowerShell_profile.example.ps1   # Profile template
@@ -45,7 +52,9 @@ repo-ready/
     ├── AGENT-ROUTING.md                       # Agent configuration
     ├── PROVIDERS.md                           # Provider setup
     ├── ROUTING-RULES.md                       # Routing rules guide
-    └── TROUBLESHOOTING.md                     # Troubleshooting guide
+    ├── TROUBLESHOOTING.md                     # Troubleshooting (5 bugs)
+    ├── UPDATING.md                            # Safe update guide
+    └── MODELS-COMMAND.md                      # /models command
 ```
 
 ## 🎯 Next Steps

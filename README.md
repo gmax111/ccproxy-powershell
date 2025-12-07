@@ -25,9 +25,11 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 ### Windows PowerShell Enhancements ✨
 - **PowerShell-native OAuth extraction** (no `jq` dependency)
 - **Auto-start CCProxy** via PowerShell profile function
+- **Watchdog auto-restart** handles Windows asyncio crash bug (CPython #93821)
 - **Windows compatibility fixes** (4 bugs fixed and documented)
 - **Multi-provider templates** (OpenAI, Gemini, Vertex AI, Azure, Perplexity, Mistral)
 - **Agent-specific routing** documentation and examples
+- **Setup script** with safe updates (preserves user config)
 
 ## Quick Start
 
@@ -37,6 +39,25 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 - [Claude Code CLI](https://claude.ai/download) installed
 - [uv](https://docs.astral.sh/uv/) package manager
 - Claude Max subscription (for OAuth) or API keys for other providers
+
+### Option A: Automated Setup (Recommended)
+
+```powershell
+# Clone this repo
+git clone https://github.com/YOUR_USERNAME/ccproxy-powershell.git
+cd ccproxy-powershell
+
+# Run setup script
+.\setup.ps1
+```
+
+The setup script will:
+1. Install ccproxy via uv (if needed)
+2. Create config directory at `~\.ccproxy`
+3. Copy template files (won't overwrite existing configs)
+4. Optionally set up your PowerShell profile
+
+### Option B: Manual Setup
 
 ### 1. Install CCProxy
 
@@ -55,8 +76,9 @@ ccproxy --version
 New-Item -ItemType Directory -Path "$env:USERPROFILE\.ccproxy" -Force
 
 # Copy template configs (after cloning this repo)
-Copy-Item ccproxy.yaml.example "$env:USERPROFILE\.ccproxy\ccproxy.yaml"
-Copy-Item config.yaml.example "$env:USERPROFILE\.ccproxy\config.yaml"
+Copy-Item ccproxy.yaml "$env:USERPROFILE\.ccproxy\ccproxy.yaml"
+Copy-Item config.yaml "$env:USERPROFILE\.ccproxy\config.yaml"
+Copy-Item watchdog.ps1 "$env:USERPROFILE\.ccproxy\watchdog.ps1"
 ```
 
 ### 3. Configure OAuth (Claude Max Users)

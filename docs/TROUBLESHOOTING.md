@@ -122,6 +122,50 @@ wsl.exe -e bash -c "ccproxy start --detach"  # Will fail
 
 ---
 
+### Bug #5: CCProxy crashes when requests are interrupted
+
+**Symptom**:
+```
+OSError: [WinError 64] The specified network name is no longer available
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed
+API Error: Connection error
+```
+
+CCProxy stops responding after you interrupt a long-running request (e.g., pressing Escape during a research task).
+
+**Cause**: This is a known Windows asyncio bug (CPython #93821). When a client connection is interrupted, Python's `ProactorEventLoop` incorrectly closes the server's listening socket instead of just the client connection. Port 4000 stops accepting new connections.
+
+**Fix**: Use the watchdog script
+
+```powershell
+# The watchdog monitors port 4000 and auto-restarts ccproxy on crash
+# It's included in cclaude function (see Microsoft.PowerShell_profile.example.ps1)
+```
+
+The watchdog:
+1. Checks port 4000 every 5 seconds
+2. Detects when ccproxy becomes unresponsive
+3. Automatically restarts ccproxy
+4. Logs restarts to `~\.ccproxy\watchdog.log`
+
+**Check watchdog status**:
+```powershell
+# See if watchdog is running
+Get-Process -Name "pwsh" | Where-Object { $_.CommandLine -like "*watchdog*" }
+
+# View watchdog log
+Get-Content "$env:USERPROFILE\.ccproxy\watchdog.log" -Tail 20
+```
+
+**Stop watchdog manually**:
+```powershell
+Get-Process pwsh | Where-Object { $_.CommandLine -like "*watchdog*" } | Stop-Process
+```
+
+**Upstream status**: This bug is tracked as CPython #93821. A fix (PR #124779) is pending merge. Once fixed in Python, the watchdog will no longer be necessary.
+
+---
+
 ## Installation Issues
 
 ### CCProxy not found after installation
