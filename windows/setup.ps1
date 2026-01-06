@@ -30,7 +30,7 @@
 
 .NOTES
     Author: CCProxy PowerShell
-    Version: 1.1.0
+    Version: 1.2.0
     Platform: Windows PowerShell 7+
 #>
 
@@ -41,10 +41,11 @@ param(
     [switch]$Help
 )
 
-# Script directory
+# Script directories
 $script:ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$script:RepoRoot = Split-Path -Parent $script:ScriptDir
 $script:ConfigDir = "$env:USERPROFILE\.ccproxy"
-$script:Version = "1.1.0"
+$script:Version = "1.2.0"
 
 # Colors
 $script:Colors = @{
@@ -66,27 +67,32 @@ $script:UserFiles = @(
 )
 
 $script:SystemFiles = @(
-    "watchdog.ps1",
-    "show-models.ps1"
+    "watchdog.ps1"
 )
 
+# Template files: Source is relative to RepoRoot, Target is filename in ConfigDir
 $script:TemplateFiles = @(
-    @{ Source = "ccproxy.yaml"; Target = "ccproxy.yaml"; Template = $true },
-    @{ Source = "config.yaml"; Target = "config.yaml"; Template = $true },
-    @{ Source = ".env.example"; Target = ".env"; Template = $true }
+    @{ Source = "ccproxy.yaml.example"; Target = "ccproxy.yaml" },
+    @{ Source = "config.yaml.example"; Target = "config.yaml" },
+    @{ Source = ".env.example"; Target = ".env" }
 )
 
+# Doc files: relative to RepoRoot
 $script:DocFiles = @(
     "README.md",
     "LICENSE",
     ".gitignore",
-    "Microsoft.PowerShell_profile.example.ps1",
-    ".env.example",
     "docs/AGENT-ROUTING.md",
     "docs/PROVIDERS.md",
     "docs/ROUTING-RULES.md",
     "docs/TROUBLESHOOTING.md",
-    "docs/MODELS-COMMAND.md"
+    "docs/MODELS-COMMAND.md",
+    "docs/UPDATING.md"
+)
+
+# Windows-specific files: relative to ScriptDir (windows/)
+$script:WindowsFiles = @(
+    "Microsoft.PowerShell_profile.example.ps1"
 )
 
 function Write-Header {
@@ -177,6 +183,7 @@ function Show-Status {
     $version = Get-InstalledVersion
 
     Write-Host "  Config Directory: $script:ConfigDir"
+    Write-Host "  Repo Root: $script:RepoRoot"
     Write-Host "  Installed: $(if ($installed) { 'Yes' } else { 'No' })"
     Write-Host "  Installed Version: $version"
     Write-Host "  Script Version: $script:Version"
@@ -243,11 +250,11 @@ function Test-Dependencies {
 
     # ccproxy
     try {
-        $ccproxyVersion = ccproxy --version 2>$null
-        Write-Success "ccproxy $ccproxyVersion"
+        ccproxy status 2>$null | Out-Null
+        Write-Success "ccproxy installed"
     } catch {
         Write-Warning "ccproxy not installed"
-        Write-Info "Will be installed: uv tool install claude-ccproxy --with 'litellm[proxy]'"
+        Write-Info "Will be installed from local repo"
     }
 
     # Claude Code
@@ -263,14 +270,17 @@ function Test-Dependencies {
 }
 
 function Install-CCProxy {
-    Write-Section "Installing CCProxy"
+    Write-Section "Installing CCProxy from Local Repo"
 
     try {
-        Write-Info "Running: uv tool install claude-ccproxy --with 'litellm[proxy]'"
-        uv tool install claude-ccproxy --with 'litellm[proxy]'
-        Write-Success "CCProxy installed"
+        Write-Info "Running: uv tool install . --force (from $script:RepoRoot)"
+        Push-Location $script:RepoRoot
+        uv tool install . --force
+        Pop-Location
+        Write-Success "CCProxy installed (version 1.2.0+windows.1)"
         return $true
     } catch {
+        Pop-Location
         Write-Error "Failed to install ccproxy: $_"
         return $false
     }
@@ -293,7 +303,7 @@ function Copy-SystemFiles {
         New-Item -ItemType Directory -Path $docsDir -Force | Out-Null
     }
 
-    # Copy system files (always overwrite)
+    # Copy system files from windows/ directory (always overwrite)
     foreach ($file in $script:SystemFiles) {
         $src = Join-Path $script:ScriptDir $file
         $dest = Join-Path $script:ConfigDir $file
@@ -301,12 +311,25 @@ function Copy-SystemFiles {
         if (Test-Path $src) {
             Copy-Item $src $dest -Force
             Write-Success "$file"
+        } else {
+            Write-Warning "$file (source not found)"
         }
     }
 
-    # Copy documentation files (always overwrite)
-    foreach ($file in $script:DocFiles) {
+    # Copy Windows-specific files to config dir
+    foreach ($file in $script:WindowsFiles) {
         $src = Join-Path $script:ScriptDir $file
+        $dest = Join-Path $script:ConfigDir $file
+
+        if (Test-Path $src) {
+            Copy-Item $src $dest -Force
+            Write-Info "$file"
+        }
+    }
+
+    # Copy documentation files from repo root (always overwrite)
+    foreach ($file in $script:DocFiles) {
+        $src = Join-Path $script:RepoRoot $file
         $dest = Join-Path $script:ConfigDir $file
 
         if (Test-Path $src) {
@@ -337,7 +360,7 @@ function Copy-UserConfigTemplates {
     Write-Host ""
 
     foreach ($template in $script:TemplateFiles) {
-        $src = Join-Path $script:ScriptDir $template.Source
+        $src = Join-Path $script:RepoRoot $template.Source
         $dest = Join-Path $script:ConfigDir $template.Target
 
         if (Test-Path $dest) {
@@ -375,10 +398,10 @@ function Update-PowerShellProfile {
         $profileContent = Get-Content $profilePath -Raw
         if ($profileContent -like "*function cclaude*") {
             Write-Success "cclaude function already in profile"
-            Write-Info "To update, see: Microsoft.PowerShell_profile.example.ps1"
+            Write-Info "To update, see: $script:ConfigDir\Microsoft.PowerShell_profile.example.ps1"
         } else {
             Write-Warning "cclaude function not found in profile"
-            Write-Info "Add manually from: Microsoft.PowerShell_profile.example.ps1"
+            Write-Info "Add manually from: $script:ConfigDir\Microsoft.PowerShell_profile.example.ps1"
         }
     }
 }
@@ -405,7 +428,7 @@ function Show-NextSteps {
         Write-Host "     - Configure routing rules (optional)"
         Write-Host ""
         Write-Host "  3. Reload your PowerShell profile:"
-        Write-Host "     . `$PROFILE"
+        Write-Host '     . $PROFILE'
         Write-Host ""
         Write-Host "  4. Start Claude Code with CCProxy:"
         Write-Host "     cclaude"
@@ -429,6 +452,13 @@ if ($Check) {
 }
 
 Write-Header "CCProxy PowerShell Setup v$script:Version"
+
+# Verify we are in the right location
+if (-not (Test-Path (Join-Path $script:RepoRoot "pyproject.toml"))) {
+    Write-Error "Cannot find pyproject.toml in repo root: $script:RepoRoot"
+    Write-Error "Please run this script from the windows/ directory of the ccproxy repo"
+    return
+}
 
 # Check for existing installation
 $existingInstall = Test-ExistingInstall
@@ -484,11 +514,19 @@ if (-not $depsOk -and -not $Force) {
     }
 }
 
-# Install ccproxy if needed
+# Install ccproxy if needed or Force is set
+$needsInstall = $false
 try {
-    ccproxy --version 2>$null | Out-Null
+    ccproxy status 2>$null | Out-Null
+    if ($Force) {
+        $needsInstall = $true
+    }
 } catch {
-    $confirm = Read-Host "Install ccproxy via uv? [Y/n]"
+    $needsInstall = $true
+}
+
+if ($needsInstall) {
+    $confirm = Read-Host "Install ccproxy from local repo? [Y/n]"
     if ($confirm -eq "" -or $confirm.ToLower().StartsWith("y")) {
         if (-not (Install-CCProxy)) {
             return

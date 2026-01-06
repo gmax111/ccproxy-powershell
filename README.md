@@ -1,6 +1,6 @@
 # CCProxy for Windows PowerShell
 
-> **PowerShell-compatible fork of [starbased-co/ccproxy](https://github.com/starbased-co/ccproxy)**
+> **Full Windows fork of [starbaser/ccproxy](https://github.com/starbaser/ccproxy)** with native Windows compatibility fixes.
 > Route Claude Code requests through LiteLLM proxy to multiple AI providers with intelligent routing rules.
 
 ## What is this?
@@ -23,10 +23,11 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 - Passthrough mode for unmatched requests
 
 ### Windows PowerShell Enhancements ✨
+- **Full source code fork** - Includes all upstream code with Windows patches
+- **Cross-platform process handling** - Fixed `os.kill()` crashes on Windows
 - **PowerShell-native OAuth extraction** (no `jq` dependency)
 - **Auto-start CCProxy** via PowerShell profile function
 - **Watchdog auto-restart** handles Windows asyncio crash bug (CPython #93821)
-- **Windows compatibility fixes** (4 bugs fixed and documented)
 - **Multi-provider templates** (OpenAI, Gemini, Vertex AI, Azure, Perplexity, Mistral)
 - **Agent-specific routing** documentation and examples
 - **Setup script** with safe updates (preserves user config)
@@ -44,29 +45,34 @@ CCProxy intercepts Claude Code API requests and routes them to different LLM pro
 
 ```powershell
 # Clone this repo
-git clone https://github.com/YOUR_USERNAME/ccproxy-powershell.git
+git clone https://github.com/gmax111/ccproxy-powershell.git
 cd ccproxy-powershell
 
-# Run setup script
-.\setup.ps1
+# Run setup script from windows directory
+.\windows\setup.ps1
 ```
 
 The setup script will:
-1. Install ccproxy via uv (if needed)
-2. Create config directory at `~\.ccproxy`
-3. Copy template files (won't overwrite existing configs)
-4. Optionally set up your PowerShell profile
+1. Check dependencies (PowerShell 7+, uv, Claude Code CLI)
+2. Install ccproxy from this local repo (with Windows fixes)
+3. Create config directory at `~\.ccproxy`
+4. Copy template files (won't overwrite existing configs)
+5. Optionally set up your PowerShell profile with `cclaude` function
 
 ### Option B: Manual Setup
 
-### 1. Install CCProxy
+### 1. Install CCProxy (from this repo)
 
 ```powershell
-# Install CCProxy with LiteLLM proxy support
-uv tool install claude-ccproxy --with 'litellm[proxy]'
+# Clone the repo
+git clone https://github.com/gmax111/ccproxy-powershell.git
+cd ccproxy-powershell
+
+# Install from local source (includes Windows fixes)
+uv tool install . --force
 
 # Verify installation
-ccproxy --version
+ccproxy status
 ```
 
 ### 2. Create Configuration Directory
@@ -75,10 +81,10 @@ ccproxy --version
 # Create config directory
 New-Item -ItemType Directory -Path "$env:USERPROFILE\.ccproxy" -Force
 
-# Copy template configs (after cloning this repo)
-Copy-Item ccproxy.yaml "$env:USERPROFILE\.ccproxy\ccproxy.yaml"
-Copy-Item config.yaml "$env:USERPROFILE\.ccproxy\config.yaml"
-Copy-Item watchdog.ps1 "$env:USERPROFILE\.ccproxy\watchdog.ps1"
+# Copy template configs
+Copy-Item ccproxy.yaml.example "$env:USERPROFILE\.ccproxy\ccproxy.yaml"
+Copy-Item config.yaml.example "$env:USERPROFILE\.ccproxy\config.yaml"
+Copy-Item windows\watchdog.ps1 "$env:USERPROFILE\.ccproxy\watchdog.ps1"
 ```
 
 ### 3. Configure OAuth (Claude Pro/Max Users)
@@ -96,7 +102,7 @@ oat_sources:
 # Open your PowerShell profile
 notepad $PROFILE
 
-# Add the cclaude function (see Microsoft.PowerShell_profile.example.ps1)
+# Add the cclaude function (see windows/Microsoft.PowerShell_profile.example.ps1)
 ```
 
 Paste this function:
@@ -144,8 +150,6 @@ cclaude
 
 ## Documentation
 
-- **[Installation Guide](docs/INSTALLATION.md)** - Detailed setup instructions
-- **[Configuration Reference](docs/CONFIGURATION.md)** - Config file options
 - **[Routing Rules](docs/ROUTING-RULES.md)** - All 4 routing rules explained
 - **[Provider Setup](docs/PROVIDERS.md)** - OpenAI, Gemini, Azure, etc.
 - **[Agent Routing](docs/AGENT-ROUTING.md)** - Configure models per agent
@@ -249,12 +253,12 @@ Route think mode, long context, and background tasks to GLM → stay within Clau
 
 ## Windows Compatibility Fixes
 
-This fork includes fixes for 4 Windows-specific issues:
+This fork includes **code-level fixes** for Windows-specific issues:
 
-1. **`.exe` extension check** - Created `litellm` copy without extension
-2. **Unicode encoding** - Set `PYTHONIOENCODING='utf-8'` before starting
-3. **GLM API base URL** - Removed double `/v1/v1/` path issue
-4. **`os.kill()` compatibility** - Documented workaround (run from native PowerShell)
+1. **`os.kill()` crash** - Replaced with cross-platform `_process_exists()` and `_terminate_process()` helpers using ctypes/taskkill
+2. **Unicode encoding** - Set `PYTHONIOENCODING='utf-8'` in cclaude function
+3. **Asyncio crash (CPython #93821)** - Watchdog auto-restart as safety net
+4. **Health check on startup** - Upstream Dec 7 fix included
 
 See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for details.
 
@@ -262,34 +266,43 @@ See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for details.
 
 ```
 ccproxy-powershell/
-├── README.md                                   # This file
-├── docs/
-│   ├── INSTALLATION.md                        # Detailed install guide
-│   ├── CONFIGURATION.md                       # Config reference
-│   ├── ROUTING-RULES.md                       # Routing rules guide
-│   ├── PROVIDERS.md                           # Provider setup
-│   ├── AGENT-ROUTING.md                       # Agent configuration
-│   └── TROUBLESHOOTING.md                     # Common issues
-├── ccproxy.yaml.example                       # Template config
-├── config.yaml.example                        # Multi-provider template
-├── Microsoft.PowerShell_profile.example.ps1   # PowerShell profile
-└── .env.example                               # API key placeholders
+├── src/ccproxy/                        # Python source (with Windows patches)
+│   ├── cli.py                          # CLI with cross-platform process handling
+│   ├── config.py                       # Configuration management
+│   ├── handler.py                      # Request handler
+│   ├── hooks.py                        # LiteLLM hooks
+│   ├── router.py                       # Model router
+│   └── rules.py                        # Routing rules
+├── windows/                            # Windows-specific files
+│   ├── setup.ps1                       # Setup script
+│   ├── watchdog.ps1                    # Auto-restart on crash
+│   └── Microsoft.PowerShell_profile.example.ps1
+├── docs/                               # Documentation
+│   ├── ROUTING-RULES.md
+│   ├── PROVIDERS.md
+│   ├── AGENT-ROUTING.md
+│   └── TROUBLESHOOTING.md
+├── pyproject.toml                      # Package configuration
+├── ccproxy.yaml.example                # Routing config template
+├── config.yaml.example                 # Provider config template
+└── .env.example                        # API key placeholders
 ```
 
 ## Differences from Original Repo
 
-### What's the Same ✅
-- Config structure (ccproxy.yaml + config.yaml)
-- All routing rules (ThinkingRule, TokenCountRule, etc.)
-- LiteLLM integration
-- OAuth forwarding mechanism
+### This is a Full Fork
+Unlike the original Windows companion repo, this fork **includes the complete source code** with Windows compatibility patches applied directly to the Python code.
+
+### What's Fixed in Code ✅
+- **`os.kill()` crashes** - Cross-platform process handling via ctypes (Windows) or signals (Unix)
+- **Health check startup** - Dec 7 upstream fix included
 
 ### What's Enhanced ✨
 - **Windows PowerShell compatibility** - All commands work natively
 - **Auto-start functionality** - PowerShell profile handles startup
 - **Multi-provider templates** - Ready-to-use examples for 8+ providers
 - **Agent routing documentation** - Model-per-agent configuration guide
-- **Bug fixes** - 4 Windows-specific issues resolved
+- **Watchdog safety net** - Auto-restart on crash (for CPython #93821)
 
 ## Contributing
 
@@ -297,24 +310,23 @@ Found a bug or have an enhancement? Open an issue or PR!
 
 ## License
 
-Same as original [starbased-co/ccproxy](https://github.com/starbased-co/ccproxy) - check their repo for license details.
+AGPL-3.0-or-later (same as original [starbaser/ccproxy](https://github.com/starbaser/ccproxy))
 
 ## Credits
 
-- **Original CCProxy**: [starbased-co/ccproxy](https://github.com/starbased-co/ccproxy)
+- **Original CCProxy**: [starbaser/ccproxy](https://github.com/starbaser/ccproxy)
 - **LiteLLM**: [BerriAI/litellm](https://github.com/BerriAI/litellm)
-- **Windows PowerShell Port**: This repo
+- **Windows Fork**: This repo
 
 ## Support
 
 - **Issues**: Open a GitHub issue
-- **Original CCProxy docs**: https://github.com/starbased-co/ccproxy
+- **Original CCProxy docs**: https://github.com/starbaser/ccproxy
 - **LiteLLM docs**: https://docs.litellm.ai/
 
 ---
 
 **Quick Links:**
-- [Installation Guide](docs/INSTALLATION.md)
 - [Provider Setup](docs/PROVIDERS.md)
 - [Routing Rules](docs/ROUTING-RULES.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
